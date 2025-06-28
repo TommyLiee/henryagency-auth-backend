@@ -14,12 +14,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ?? Connexion ‡ MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('? ConnectÈ ‡ MongoDB'))
+// ?? Connexion √† MongoDB
+mongoose.connect("mongodb+srv://admin:admin123@henryagency.nrvabdb.mongodb.net/?retryWrites=true&w=majority&appName=HenryAgency")
+  .then(() => console.log('? Connect√© √† MongoDB'))
   .catch(err => console.error('? Erreur MongoDB :', err));
 
-// ?? ModËle utilisateur
+// ?? Mod√®le utilisateur
 const userSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String
@@ -29,11 +29,11 @@ const User = mongoose.model('User', userSchema);
 // ?? Middleware d'authentification
 const authenticateToken = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ error: "AccËs refusÈ, token manquant" });
+  if (!token) return res.status(401).json({ error: "Acc√®s refus√©, token manquant" });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // On stocke tout l'objet dÈcodÈ
+    req.user = decoded; // On stocke tout l'objet d√©cod√©
     next();
   } catch (err) {
     res.status(401).json({ error: "Token invalide" });
@@ -47,10 +47,10 @@ app.post('/register', async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     const user = new User({ email, password: hashed });
     await user.save();
-    res.json({ message: "? Utilisateur crÈÈ avec succËs" });
+    res.json({ message: "? Utilisateur cr√©√© avec succ√®s" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Erreur lors de la crÈation" });
+    res.status(500).json({ error: "Erreur lors de la cr√©ation" });
   }
 });
 
@@ -59,7 +59,7 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ error: "Utilisateur non trouvÈ" });
+    if (!user) return res.status(401).json({ error: "Utilisateur non trouv√©" });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: "Mot de passe incorrect" });
@@ -77,7 +77,7 @@ app.get('/profile', authenticateToken, (req, res) => {
   res.json({ message: `Bienvenue, utilisateur ${req.user.userId}` });
 });
 
-// ?? CrÈer une commande
+// ?? Cr√©er une commande
 app.post('/create-order', authenticateToken, async (req, res) => {
   const { title, swissLink } = req.body;
   try {
@@ -89,13 +89,13 @@ app.post('/create-order', authenticateToken, async (req, res) => {
       messages: []
     });
     await order.save();
-    res.json({ message: '? Commande crÈÈe avec succËs' });
+    res.json({ message: '? Commande cr√©√©e avec succ√®s' });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Erreur lors de la crÈation de commande' });
+    res.status(500).json({ error: 'Erreur lors de la cr√©ation de commande' });
   }
 });
 
 // ?? Lancement serveur
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`?? API lancÈe sur le port ${PORT}`));
+app.listen(PORT, () => console.log(`?? API lanc√©e sur le port ${PORT}`));
