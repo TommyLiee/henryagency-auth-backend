@@ -63,6 +63,15 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// Route test de profil pour vérifier que le token fonctionne
+app.get("/profile", authMiddleware, (req, res) => {
+  res.json({
+    message: `Bienvenue, utilisateur ${req.user.userId}`,
+    email: req.user.email
+  });
+});
+
+
 // Récupérer les commandes du user
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
