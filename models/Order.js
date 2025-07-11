@@ -1,20 +1,21 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  email: { type: String, required: true },
-  title: { type: String, required: true },
-  swissLink: { type: String },
-  total: { type: Number, required: true },
-  status: { type: String, default: 'en attente' },
+  userId: String,
+  email: String,
+  title: String, // facultatif
+  swissLink: String,
+  status: { type: String, default: "en attente" },
   date: { type: Date, default: Date.now },
-  messages: [
+  messages: [],
+  items: [ // ✅ NOUVEAU
     {
-      sender: String,
-      content: String,
-      timestamp: { type: Date, default: Date.now }
+      name: String,
+      quantity: Number,
+      options: [String],
+      price: Number
     }
   ]
 });
 
-module.exports = mongoose.model('Order', orderSchema);
+module.exports = mongoose.model("Order", orderSchema);
