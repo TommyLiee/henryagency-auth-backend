@@ -1,3 +1,4 @@
+// index.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -8,15 +9,17 @@ const Order = require('./models/Order');
 const User = require('./models/User');
 
 const app = express();
+
+// Middleware global
 app.use(cors());
 app.use(express.json());
 
-// Connexion MongoDB
+// Connexion à MongoDB
 mongoose.connect("mongodb+srv://admin:admin123@henryagency.nrvabdb.mongodb.net/?retryWrites=true&w=majority&appName=HenryAgency")
   .then(() => console.log("✅ Connecté à MongoDB"))
   .catch(err => console.error("❌ Erreur MongoDB :", err));
 
-// Middleware JWT
+// Middleware d'authentification
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "Token manquant" });
@@ -30,7 +33,7 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Inscription
+// 🔐 Inscription
 app.post("/register", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -44,7 +47,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// Connexion
+// 🔐 Connexion
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -54,16 +57,19 @@ app.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ error: "Mot de passe incorrect" });
 
-    const token = jwt.sign({ userId: user._id, email: user.email }, "a9X7!eZr7Lk#92s!zWb@03YTt-456fgr", {
-      expiresIn: "7d"
-    });
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      "a9X7!eZr7Lk#92s!zWb@03YTt-456fgr",
+      { expiresIn: "7d" }
+    );
+
     res.json({ token });
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
-// Route test de profil pour vérifier que le token fonctionne
+// 🔍 Profil utilisateur (test token)
 app.get("/profile", authMiddleware, (req, res) => {
   res.json({
     message: `Bienvenue, utilisateur ${req.user.userId}`,
@@ -71,8 +77,7 @@ app.get("/profile", authMiddleware, (req, res) => {
   });
 });
 
-
-// Récupérer les commandes du user
+// 📦 Récupérer les commandes du user
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ email: req.user.email }).sort({ date: -1 });
@@ -83,7 +88,7 @@ app.get("/orders", authMiddleware, async (req, res) => {
   }
 });
 
-// Créer une commande
+// ➕ Créer une commande
 app.post("/create-order", authMiddleware, async (req, res) => {
   const { title, swissLink } = req.body;
   try {
@@ -92,18 +97,18 @@ app.post("/create-order", authMiddleware, async (req, res) => {
       email: req.user.email,
       title,
       swissLink,
-      status: 'en attente',
+      status: "en attente",
       messages: []
     });
     await order.save();
     res.json({ message: "✅ Commande créée avec succès" });
   } catch (err) {
+    console.error("❌ Erreur création commande :", err);
     res.status(500).json({ error: "Erreur création commande" });
   }
 });
 
-app.listen(4242, () => console.log("🚀 Serveur auth lancé sur le port 4242"));
-
+// 🔒 Accès admin pour voir toutes les commandes
 app.get("/admin-orders", authMiddleware, async (req, res) => {
   if (req.user.email !== "tr33fle@gmail.com") {
     return res.status(403).json({ message: "Non autorisé" });
@@ -117,3 +122,5 @@ app.get("/admin-orders", authMiddleware, async (req, res) => {
   }
 });
 
+// 🚀 Lancer serveur
+app.listen(4242, () => console.log("🚀 Serveur auth lancé sur le port 4242"));
