@@ -103,3 +103,17 @@ app.post("/create-order", authMiddleware, async (req, res) => {
 });
 
 app.listen(4242, () => console.log("🚀 Serveur auth lancé sur le port 4242"));
+
+app.get("/admin-orders", authMiddleware, async (req, res) => {
+  if (req.user.email !== "tr33fle@gmail.com") {
+    return res.status(403).json({ message: "Non autorisé" });
+  }
+
+  try {
+    const allOrders = await Order.find().sort({ date: -1 });
+    res.json(allOrders);
+  } catch (err) {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
