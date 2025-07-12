@@ -3,26 +3,25 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
 
 const Order = require('./models/Order');
 const User = require('./models/User');
 
-dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET;
+const PORT = 3000;
+const JWT_SECRET = "henrysupersecret2025"; // 💡 Ta clé secrète ici directement
 const ADMIN_EMAIL = "tr33fle@gmail.com";
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// ✅ Connexion MongoDB
-mongoose.connect(process.env.MONGO_URI)
+// Connexion MongoDB
+mongoose.connect("mongodb+srv://admin:admin123@henryagency.nrvabdb.mongodb.net/?retryWrites=true&w=majority")
   .then(() => console.log("✅ Connecté à MongoDB"))
   .catch(err => console.error("❌ Erreur MongoDB :", err));
 
-// ✅ Middleware Auth
+// Auth Middleware
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "Token manquant" });
@@ -36,7 +35,7 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// ✅ Inscription
+// Inscription
 app.post("/register", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -50,7 +49,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// ✅ Connexion
+// Connexion
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -72,7 +71,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// ✅ Profil utilisateur
+// Profil utilisateur
 app.get("/profile", authMiddleware, (req, res) => {
   res.json({
     message: `Bienvenue, utilisateur ${req.user.userId}`,
@@ -80,7 +79,7 @@ app.get("/profile", authMiddleware, (req, res) => {
   });
 });
 
-// ✅ Commandes (client)
+// Récupération des commandes client
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ email: req.user.email }).sort({ date: -1 });
@@ -91,7 +90,7 @@ app.get("/orders", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ Création de commande
+// Création d'une commande
 app.post("/create-order", authMiddleware, async (req, res) => {
   const { title, swissLink, items, date } = req.body;
   try {
@@ -113,7 +112,7 @@ app.post("/create-order", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ Commandes admin
+// Admin - récupérer toutes les commandes
 app.get("/admin-orders", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) {
     return res.status(403).json({ message: "Accès refusé" });
@@ -128,7 +127,7 @@ app.get("/admin-orders", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ 🔁 Récupérer messages d'une commande
+// Récupérer messages
 app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -145,48 +144,37 @@ app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ ✏️ Envoyer un message lié à une commande
+// Envoyer message
 app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
   const { text } = req.body;
-  if (!text) {
-    console.warn("⚠️ Message vide reçu, ignoré.");
-    return res.status(400).json({ message: "Message vide" });
-  }
+  if (!text) return res.status(400).json({ message: "Message vide" });
 
   try {
     const order = await Order.findById(req.params.id);
-    if (!order) {
-      console.error("❌ Commande introuvable pour l'envoi de message.");
-      return res.status(404).json({ message: "Commande non trouvée" });
-    }
+    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
 
     const isOwner = order.email === req.user.email;
     const isAdmin = req.user.email === ADMIN_EMAIL;
-    if (!isOwner && !isAdmin) {
-      console.warn("⚠️ Utilisateur non autorisé à écrire un message.");
-      return res.status(403).json({ message: "Non autorisé" });
-    }
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
 
-    const sender = isAdmin ? "admin" : "client";
-    console.log("➡️ Nouveau message reçu :", { sender, text });
-
-    order.messages.push({
-      sender,
+    const newMessage = {
+      sender: isAdmin ? "admin" : "client",
       text,
       timestamp: new Date()
-    });
+    };
 
+    order.messages.push(newMessage);
     await order.save();
 
-    console.log("✅ Message sauvegardé dans la commande :", order._id);
+    console.log("💬 Nouveau message ajouté :", newMessage);
     res.json({ success: true });
   } catch (err) {
-    console.error("❌ Erreur lors de l'enregistrement du message :", err);
+    console.error("❌ Erreur envoi message :", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
-// ✅ Lancement serveur
+// Lancer serveur
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur le port ${PORT}`);
 });
