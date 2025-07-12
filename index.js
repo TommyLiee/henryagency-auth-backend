@@ -1,27 +1,32 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const path = require("path");
 
-const Order = require('./models/Order');
-const User = require('./models/User');
+const Order = require("./models/Order");
+const User = require("./models/User");
 
 const app = express();
 const PORT = 3000;
-const JWT_SECRET = "henrysupersecret2025"; // 💡 Ta clé secrète ici directement
+const JWT_SECRET = "henrysupersecret2025";
 const ADMIN_EMAIL = "tr33fle@gmail.com";
 
-// Middleware
+// 🔊 Rendre les fichiers statiques accessibles (comme notif.mp3)
+app.use("/public", express.static(path.join(__dirname, "public")));
+
+// 🧩 Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Connexion MongoDB
-mongoose.connect("mongodb+srv://admin:admin123@henryagency.nrvabdb.mongodb.net/?retryWrites=true&w=majority")
+// 🔌 Connexion MongoDB
+mongoose
+  .connect("mongodb+srv://admin:admin123@henryagency.nrvabdb.mongodb.net/?retryWrites=true&w=majority")
   .then(() => console.log("✅ Connecté à MongoDB"))
   .catch(err => console.error("❌ Erreur MongoDB :", err));
 
-// Auth Middleware
+// 🔐 Auth Middleware
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "Token manquant" });
@@ -35,7 +40,7 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Inscription
+// 👤 Inscription
 app.post("/register", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -49,7 +54,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// Connexion
+// 🔑 Connexion
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -71,7 +76,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Profil utilisateur
+// 📄 Profil utilisateur
 app.get("/profile", authMiddleware, (req, res) => {
   res.json({
     message: `Bienvenue, utilisateur ${req.user.userId}`,
@@ -79,7 +84,7 @@ app.get("/profile", authMiddleware, (req, res) => {
   });
 });
 
-// Récupération des commandes client
+// 📦 Commandes - côté client
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ email: req.user.email }).sort({ date: -1 });
@@ -90,7 +95,7 @@ app.get("/orders", authMiddleware, async (req, res) => {
   }
 });
 
-// Création d'une commande
+// ➕ Création d'une commande
 app.post("/create-order", authMiddleware, async (req, res) => {
   const { title, swissLink, items, date } = req.body;
   try {
@@ -112,7 +117,7 @@ app.post("/create-order", authMiddleware, async (req, res) => {
   }
 });
 
-// Admin - récupérer toutes les commandes
+// 🧑‍💼 Commandes - côté admin
 app.get("/admin-orders", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) {
     return res.status(403).json({ message: "Accès refusé" });
@@ -127,7 +132,7 @@ app.get("/admin-orders", authMiddleware, async (req, res) => {
   }
 });
 
-// Récupérer messages
+// 💬 Récupérer les messages d’une commande
 app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -144,7 +149,7 @@ app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   }
 });
 
-// Envoyer message
+// 📤 Envoyer un message dans une commande
 app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ message: "Message vide" });
@@ -174,7 +179,7 @@ app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
   }
 });
 
-// Lancer serveur
+// 🚀 Lancement du serveur
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur le port ${PORT}`);
 });
