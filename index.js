@@ -80,7 +80,7 @@ app.get("/profile", authMiddleware, (req, res) => {
   });
 });
 
-// ✅ Commandes (côté client)
+// ✅ Commandes client
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ email: req.user.email }).sort({ date: -1 });
@@ -106,7 +106,7 @@ app.post("/create-order", authMiddleware, async (req, res) => {
       date: date || new Date()
     });
     await order.save();
-    res.json({ message: "✅ Commande créée avec succès" });
+    res.json({ message: "✅ Commande créée avec succès", order });
   } catch (err) {
     console.error("❌ Erreur création commande :", err);
     res.status(500).json({ message: "Erreur serveur" });
@@ -158,21 +158,24 @@ app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
     const isAdmin = req.user.email === ADMIN_EMAIL;
     if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
 
-    order.messages.push({
+    const newMessage = {
       sender: isAdmin ? "admin" : "client",
       text,
       timestamp: new Date()
-    });
+    };
 
+    order.messages.push(newMessage);
     await order.save();
-    res.json({ success: true });
+
+    console.log("✅ Nouveau message enregistré :", newMessage);
+    res.json({ success: true, message: "Message bien envoyé", data: newMessage });
   } catch (err) {
     console.error("❌ Erreur envoi message :", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
-// ✅ Lancement serveur
+// ✅ Lancement du serveur
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur le port ${PORT}`);
 });
