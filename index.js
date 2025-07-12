@@ -80,7 +80,7 @@ app.get("/profile", authMiddleware, (req, res) => {
   });
 });
 
-// ✅ Commandes client
+// ✅ Commandes (client)
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ email: req.user.email }).sort({ date: -1 });
@@ -106,7 +106,7 @@ app.post("/create-order", authMiddleware, async (req, res) => {
       date: date || new Date()
     });
     await order.save();
-    res.json({ message: "✅ Commande créée avec succès", order });
+    res.json({ message: "✅ Commande créée avec succès" });
   } catch (err) {
     console.error("❌ Erreur création commande :", err);
     res.status(500).json({ message: "Erreur serveur" });
@@ -148,34 +148,45 @@ app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
 // ✅ ✏️ Envoyer un message lié à une commande
 app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
   const { text } = req.body;
-  if (!text) return res.status(400).json({ message: "Message vide" });
+  if (!text) {
+    console.warn("⚠️ Message vide reçu, ignoré.");
+    return res.status(400).json({ message: "Message vide" });
+  }
 
   try {
     const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
+    if (!order) {
+      console.error("❌ Commande introuvable pour l'envoi de message.");
+      return res.status(404).json({ message: "Commande non trouvée" });
+    }
 
     const isOwner = order.email === req.user.email;
     const isAdmin = req.user.email === ADMIN_EMAIL;
-    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
+    if (!isOwner && !isAdmin) {
+      console.warn("⚠️ Utilisateur non autorisé à écrire un message.");
+      return res.status(403).json({ message: "Non autorisé" });
+    }
 
-    const newMessage = {
-      sender: isAdmin ? "admin" : "client",
+    const sender = isAdmin ? "admin" : "client";
+    console.log("➡️ Nouveau message reçu :", { sender, text });
+
+    order.messages.push({
+      sender,
       text,
       timestamp: new Date()
-    };
+    });
 
-    order.messages.push(newMessage);
     await order.save();
 
-    console.log("✅ Nouveau message enregistré :", newMessage);
-    res.json({ success: true, message: "Message bien envoyé", data: newMessage });
+    console.log("✅ Message sauvegardé dans la commande :", order._id);
+    res.json({ success: true });
   } catch (err) {
-    console.error("❌ Erreur envoi message :", err);
+    console.error("❌ Erreur lors de l'enregistrement du message :", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
-// ✅ Lancement du serveur
+// ✅ Lancement serveur
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur le port ${PORT}`);
 });
