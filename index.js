@@ -13,8 +13,8 @@ const PORT = 3000;
 const JWT_SECRET = "henrysupersecret2025";
 const ADMIN_EMAIL = "tr33fle@gmail.com";
 
-// 🔊 Rendre les fichiers statiques accessibles (comme notif.mp3)
-app.use("/public", express.static(path.join(__dirname, "public")));
+// 🔊 Fichiers statiques (notif.mp3 accessible sur /notif.mp3)
+app.use(express.static(path.join(__dirname, "public")));
 
 // 🧩 Middlewares
 app.use(cors());
@@ -132,7 +132,7 @@ app.get("/admin-orders", authMiddleware, async (req, res) => {
   }
 });
 
-// 💬 Récupérer les messages d’une commande
+// 💬 Récupérer les messages
 app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -149,7 +149,7 @@ app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   }
 });
 
-// 📤 Envoyer un message dans une commande
+// 📤 Envoyer un message
 app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ message: "Message vide" });
@@ -179,7 +179,7 @@ app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
   }
 });
 
-// 🚀 Lancement du serveur
+// 🚀 Démarrage du serveur
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur le port ${PORT}`);
 });
