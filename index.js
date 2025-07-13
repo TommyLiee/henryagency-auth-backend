@@ -12,31 +12,25 @@ const Order = require("./models/Order");
 const User = require("./models/User");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const JWT_SECRET = "henrysupersecret2025";
 const ADMIN_EMAIL = "tr33fle@gmail.com";
 
-// 🔑 GOOGLE API CREDENTIALS (non sécurisés)
 const GOOGLE_CLIENT_ID = "638043072445-l20os9t7k32baur7qgdg7s8r7ptpud82.apps.googleusercontent.com";
 const GOOGLE_CLIENT_SECRET = "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";
 
-// 📁 Fichiers statiques (sons, logos…)
 app.use(express.static(path.join(__dirname, "public")));
-
-// 🧩 Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(session({ secret: "keyboard cat", resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 🔌 Connexion MongoDB
 mongoose.connect("mongodb+srv://admin:admin123@henryagency.nrvabdb.mongodb.net/?retryWrites=true&w=majority")
   .then(() => console.log("✅ Connecté à MongoDB"))
   .catch(err => console.error("❌ Erreur MongoDB :", err));
 
-// 🔐 Middleware JWT
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "Token manquant" });
@@ -50,15 +44,13 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// 🎯 Passport Strategy Google
 passport.use(new GoogleStrategy({
   clientID: GOOGLE_CLIENT_ID,
   clientSecret: GOOGLE_CLIENT_SECRET,
-  callbackURL: "/auth/google/callback"
+  callbackURL: "https://henryagency-auth-backend.onrender.com/auth/google/callback"
 },
 async (accessToken, refreshToken, profile, done) => {
   const email = profile.emails[0].value;
-
   let user = await User.findOne({ email });
 
   if (!user) {
@@ -66,7 +58,7 @@ async (accessToken, refreshToken, profile, done) => {
       firstName: profile.name.givenName,
       lastName: profile.name.familyName,
       email,
-      password: "" // Aucun mot de passe pour Google
+      password: ""
     });
     await user.save();
   }
@@ -82,7 +74,6 @@ passport.deserializeUser(async (id, done) => {
   done(null, user);
 });
 
-// ✅ INSCRIPTION CLASSIQUE
 app.post("/register", async (req, res) => {
   const { firstName, lastName, phone, email, password } = req.body;
 
@@ -102,14 +93,12 @@ app.post("/register", async (req, res) => {
 
     await newUser.save();
     res.json({ message: "✅ Compte créé avec succès" });
-
   } catch (err) {
     console.error("❌ Erreur inscription :", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
-// ✅ CONNEXION CLASSIQUE
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -128,14 +117,12 @@ app.post("/login", async (req, res) => {
     }, JWT_SECRET, { expiresIn: "7d" });
 
     res.json({ token });
-
   } catch (err) {
     console.error("❌ Erreur connexion :", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
-// ✅ CONNEXION AVEC GOOGLE
 app.get("/auth/google", passport.authenticate("google", {
   scope: ["profile", "email"]
 }));
@@ -152,11 +139,9 @@ app.get("/auth/google/callback", passport.authenticate("google", {
     lastName: user.lastName
   }, JWT_SECRET, { expiresIn: "7d" });
 
-  // ✅ Redirection avec token dans l’URL
-  res.redirect(`http://localhost:5500/dashboard.html?token=${token}`);
+  res.redirect(`https://henryagency.webflow.io/dashboard.html?token=${token}`);
 });
 
-// 👤 PROFIL UTILISATEUR
 app.get("/profile", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
@@ -166,7 +151,6 @@ app.get("/profile", authMiddleware, async (req, res) => {
   }
 });
 
-// 📦 COMMANDES UTILISATEUR
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.userId }).sort({ date: -1 });
@@ -176,7 +160,6 @@ app.get("/orders", authMiddleware, async (req, res) => {
   }
 });
 
-// ➕ CRÉATION DE COMMANDE
 app.post("/create-order", authMiddleware, async (req, res) => {
   const { title, swissLink, items, date } = req.body;
 
@@ -194,13 +177,11 @@ app.post("/create-order", authMiddleware, async (req, res) => {
 
     await order.save();
     res.json({ message: "✅ Commande créée avec succès" });
-
   } catch {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
-// 👨‍💼 LISTE DES COMMANDES POUR L'ADMIN
 app.get("/admin-orders", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
 
@@ -212,7 +193,6 @@ app.get("/admin-orders", authMiddleware, async (req, res) => {
   }
 });
 
-// 💬 RÉCUPÉRER LES MESSAGES
 app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -229,7 +209,6 @@ app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   }
 });
 
-// 💬 ENVOYER UN MESSAGE
 app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ message: "Message vide" });
@@ -253,13 +232,11 @@ app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
     await order.save();
 
     res.json({ success: true });
-
   } catch {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
-// 🚀 DÉMARRAGE
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
 });
