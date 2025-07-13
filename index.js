@@ -13,7 +13,7 @@ const PORT = 3000;
 const JWT_SECRET = "henrysupersecret2025";
 const ADMIN_EMAIL = "tr33fle@gmail.com";
 
-// 📁 Fichiers statiques (sons, etc.)
+// 📁 Fichiers statiques (sons, logos…)
 app.use(express.static(path.join(__dirname, "public")));
 
 // 🧩 Middlewares
@@ -39,9 +39,11 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// ✅ INSCRIPTION
+// ✅ INSCRIPTION UTILISATEUR
 app.post("/register", async (req, res) => {
   const { firstName, lastName, phone, email, password } = req.body;
+
+  console.log("🔍 Données reçues :", req.body);
 
   try {
     const existing = await User.findOne({ email: email.trim().toLowerCase() });
@@ -49,15 +51,17 @@ app.post("/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      phone: phone.trim(),
+    const newUser = new User({
+      firstName: firstName?.trim(),
+      lastName: lastName?.trim(),
+      phone: phone?.trim(),
       email: email.trim().toLowerCase(),
       password: hashedPassword
     });
 
-    await user.save();
+    console.log("📦 Utilisateur à sauvegarder :", newUser);
+
+    await newUser.save();
     res.json({ message: "✅ Compte créé avec succès" });
 
   } catch (err) {
@@ -136,7 +140,7 @@ app.post("/create-order", authMiddleware, async (req, res) => {
   }
 });
 
-// 👨‍💼 COMMANDES ADMIN
+// 👨‍💼 LISTE DES COMMANDES POUR L'ADMIN
 app.get("/admin-orders", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
 
@@ -197,5 +201,5 @@ app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
 
 // 🚀 DÉMARRAGE
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur backend lancé sur le port ${PORT}`);
+  console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
 });
