@@ -4,14 +4,22 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const session = require("express-session");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const Order = require("./models/Order");
 const User = require("./models/User");
 
 const app = express();
 const PORT = 3000;
+
 const JWT_SECRET = "henrysupersecret2025";
 const ADMIN_EMAIL = "tr33fle@gmail.com";
+
+// 🔑 GOOGLE API CREDENTIALS (non sécurisés)
+const GOOGLE_CLIENT_ID = "638043072445-l20os9t7k32baur7qgdg7s8r7ptpud82.apps.googleusercontent.com";
+const GOOGLE_CLIENT_SECRET = "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";
 
 // 📁 Fichiers statiques (sons, logos…)
 app.use(express.static(path.join(__dirname, "public")));
@@ -19,6 +27,9 @@ app.use(express.static(path.join(__dirname, "public")));
 // 🧩 Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(session({ secret: "keyboard cat", resave: false, saveUninitialized: false }));
+app.use(passport.initialize());
+app.use(passport.session());
 
 // 🔌 Connexion MongoDB
 mongoose.connect("mongodb+srv://admin:admin123@henryagency.nrvabdb.mongodb.net/?retryWrites=true&w=majority")
@@ -39,11 +50,41 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// ✅ INSCRIPTION UTILISATEUR
+// 🎯 Passport Strategy Google
+passport.use(new GoogleStrategy({
+  clientID: GOOGLE_CLIENT_ID,
+  clientSecret: GOOGLE_CLIENT_SECRET,
+  callbackURL: "/auth/google/callback"
+},
+async (accessToken, refreshToken, profile, done) => {
+  const email = profile.emails[0].value;
+
+  let user = await User.findOne({ email });
+
+  if (!user) {
+    user = new User({
+      firstName: profile.name.givenName,
+      lastName: profile.name.familyName,
+      email,
+      password: "" // Aucun mot de passe pour Google
+    });
+    await user.save();
+  }
+
+  return done(null, user);
+}));
+
+passport.serializeUser((user, done) => {
+  done(null, user._id);
+});
+passport.deserializeUser(async (id, done) => {
+  const user = await User.findById(id);
+  done(null, user);
+});
+
+// ✅ INSCRIPTION CLASSIQUE
 app.post("/register", async (req, res) => {
   const { firstName, lastName, phone, email, password } = req.body;
-
-  console.log("🔍 Données reçues :", req.body);
 
   try {
     const existing = await User.findOne({ email: email.trim().toLowerCase() });
@@ -59,8 +100,6 @@ app.post("/register", async (req, res) => {
       password: hashedPassword
     });
 
-    console.log("📦 Utilisateur à sauvegarder :", newUser);
-
     await newUser.save();
     res.json({ message: "✅ Compte créé avec succès" });
 
@@ -70,7 +109,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// ✅ CONNEXION
+// ✅ CONNEXION CLASSIQUE
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -94,6 +133,27 @@ app.post("/login", async (req, res) => {
     console.error("❌ Erreur connexion :", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
+});
+
+// ✅ CONNEXION AVEC GOOGLE
+app.get("/auth/google", passport.authenticate("google", {
+  scope: ["profile", "email"]
+}));
+
+app.get("/auth/google/callback", passport.authenticate("google", {
+  session: false,
+  failureRedirect: "/login"
+}), (req, res) => {
+  const user = req.user;
+  const token = jwt.sign({
+    userId: user._id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName
+  }, JWT_SECRET, { expiresIn: "7d" });
+
+  // ✅ Redirection avec token dans l’URL
+  res.redirect(`http://localhost:5500/dashboard.html?token=${token}`);
 });
 
 // 👤 PROFIL UTILISATEUR
