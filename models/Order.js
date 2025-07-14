@@ -72,6 +72,10 @@ const orderSchema = new mongoose.Schema({
   items: {
     type: [itemSchema],
     default: []
+  },
+  lastReadByClient: {
+    type: Date,
+    default: null
   }
 });
 
