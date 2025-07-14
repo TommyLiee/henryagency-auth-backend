@@ -1,4 +1,4 @@
-// ✅ index.js complet avec route admin de mise à jour du statut + badge messages non lus
+// ✅ index.js complet avec route admin de mise à jour du statut
 
 const express = require("express");
 const mongoose = require("mongoose");
@@ -84,7 +84,7 @@ app.get("/auth/google/callback", passport.authenticate("google", {
     firstName: user.firstName,
     lastName: user.lastName
   }, JWT_SECRET, { expiresIn: "7d" });
-  res.redirect(`https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io/dashboard?token=${token}`);
+  res.redirect(https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io/dashboard?token=${token});
 });
 
 app.post("/inscription", async (req, res) => {
@@ -179,84 +179,59 @@ app.get("/admin-orders", authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ Nouvelle route admin : changer le statut d'une commande
 app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
   const { status } = req.body;
   const allowedStatus = ["en attente", "payée", "en cours", "en pause", "terminée"];
+
   if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
   if (!allowedStatus.includes(status)) return res.status(400).json({ message: "Statut invalide" });
 
   try {
     const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
     if (!order) return res.status(404).json({ message: "Commande non trouvée" });
-    res.json({ message: `✅ Statut mis à jour vers \"${status}\"`, order });
+    res.json({ message: ✅ Statut mis à jour vers \"${status}\", order });
   } catch (err) {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
-// ✅ Récupérer les messages d'une commande
 app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Commande non trouvée" });
+
     const isOwner = order.userId.toString() === req.user.userId;
     const isAdmin = req.user.email === ADMIN_EMAIL;
     if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
+
     res.json(order.messages || []);
   } catch {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
 
-// ✅ Envoyer un message
 app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
   const { text } = req.body;
   if (!text) return res.status(400).json({ message: "Message vide" });
+
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Commande non trouvée" });
+
     const isOwner = order.userId.toString() === req.user.userId;
     const isAdmin = req.user.email === ADMIN_EMAIL;
     if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
-    const newMessage = { sender: isAdmin ? "admin" : "client", text, timestamp: new Date() };
+
+    const newMessage = {
+      sender: isAdmin ? "admin" : "client",
+      text,
+      timestamp: new Date()
+    };
+
     order.messages.push(newMessage);
     await order.save();
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
 
-// ✅ Route : Compter les messages non lus
-app.get("/orders/unread-count", authMiddleware, async (req, res) => {
-  try {
-    const isAdmin = req.user.email === ADMIN_EMAIL;
-    const orders = isAdmin
-      ? await Order.find()
-      : await Order.find({ userId: req.user.userId });
-
-    const results = orders.map(order => {
-      const lastSeen = isAdmin ? order.lastSeenByAdmin : order.lastSeenByClient;
-      const unread = order.messages.filter(m => m.sender !== (isAdmin ? "admin" : "client") && (!lastSeen || m.timestamp > lastSeen)).length;
-      return { orderId: order._id, unreadCount: unread };
-    });
-
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
-
-// ✅ Marquer les messages comme lus
-app.post("/orders/:id/mark-as-read", authMiddleware, async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
-    const isAdmin = req.user.email === ADMIN_EMAIL;
-    if (isAdmin) order.lastSeenByAdmin = new Date();
-    else if (order.userId.toString() === req.user.userId) order.lastSeenByClient = new Date();
-    else return res.status(403).json({ message: "Non autorisé" });
-    await order.save();
     res.json({ success: true });
   } catch {
     res.status(500).json({ message: "Erreur serveur" });
@@ -264,5 +239,5 @@ app.post("/orders/:id/mark-as-read", authMiddleware, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
+  console.log(🚀 Serveur backend lancé sur http://localhost:${PORT});
 });
