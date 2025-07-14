@@ -161,20 +161,22 @@ app.post("/create-order", authMiddleware, async (req, res) => {
   }
 });
 
-app.get("/orders", authMiddleware, async (req, res) => {
+aapp.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.userId }).sort({ date: -1 });
 
     const updatedOrders = orders.map(order => {
-      const lastMessage = order.messages?.[order.messages.length - 1];
-      const hasNewMessage =
-        lastMessage &&
-        lastMessage.sender === "admin" &&
-        (!order.lastReadByClient || new Date(lastMessage.timestamp) > new Date(order.lastReadByClient));
+      const lastRead = order.lastReadByClient ? new Date(order.lastReadByClient) : new Date(0);
+
+      // Filtrer tous les messages de l'admin non lus
+      const unreadMessages = order.messages?.filter(msg =>
+        msg.sender === "admin" && new Date(msg.timestamp) > lastRead
+      ) || [];
 
       return {
         ...order.toObject(),
-        hasNewMessage
+        hasNewMessage: unreadMessages.length > 0,
+        newMessageCount: unreadMessages.length
       };
     });
 
