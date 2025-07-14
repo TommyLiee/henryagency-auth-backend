@@ -139,7 +139,7 @@ app.get("/auth/google/callback", passport.authenticate("google", {
     lastName: user.lastName
   }, JWT_SECRET, { expiresIn: "7d" });
 
-  res.redirect(`https://henryagency.webflow.io/dashboard.html?token=${token}`);
+  res.redirect(`https://henryagency.webflow.io/dashboard?token=${token}`);
 });
 
 app.get("/profile", authMiddleware, async (req, res) => {
