@@ -72,6 +72,16 @@ const orderSchema = new mongoose.Schema({
   items: {
     type: [itemSchema],
     default: []
+  },
+
+  // ✅ Ajout pour gestion des messages non lus
+  lastSeenByClient: {
+    type: Date,
+    default: Date.now
+  },
+  lastSeenByAdmin: {
+    type: Date,
+    default: Date.now
   }
 });
 
