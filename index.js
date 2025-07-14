@@ -1,5 +1,3 @@
-// ✅ index.js complet avec route admin de mise à jour du statut
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -84,7 +82,8 @@ app.get("/auth/google/callback", passport.authenticate("google", {
     firstName: user.firstName,
     lastName: user.lastName
   }, JWT_SECRET, { expiresIn: "7d" });
-  res.redirect(https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io/dashboard?token=${token});
+
+  res.redirect(`https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io/dashboard?token=${token}`);
 });
 
 app.post("/inscription", async (req, res) => {
@@ -179,7 +178,6 @@ app.get("/admin-orders", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ Nouvelle route admin : changer le statut d'une commande
 app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
   const { status } = req.body;
   const allowedStatus = ["en attente", "payée", "en cours", "en pause", "terminée"];
@@ -190,7 +188,7 @@ app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
     if (!order) return res.status(404).json({ message: "Commande non trouvée" });
-    res.json({ message: ✅ Statut mis à jour vers \"${status}\", order });
+    res.json({ message: `✅ Statut mis à jour vers "${status}"`, order });
   } catch (err) {
     res.status(500).json({ message: "Erreur serveur" });
   }
@@ -239,5 +237,5 @@ app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(🚀 Serveur backend lancé sur http://localhost:${PORT});
+  console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
 });
