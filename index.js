@@ -84,7 +84,7 @@ app.get("/auth/google/callback", passport.authenticate("google", {
     firstName: user.firstName,
     lastName: user.lastName
   }, JWT_SECRET, { expiresIn: "7d" });
-  res.redirect(https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io/dashboard?token=${token});
+res.redirect(`https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io/dashboard?token=${token}`);
 });
 
 app.post("/inscription", async (req, res) => {
