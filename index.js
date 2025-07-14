@@ -250,6 +250,22 @@ app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+app.patch("/orders/:id/mark-read", authMiddleware, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
+
+    const isOwner = order.userId.toString() === req.user.userId;
+    if (!isOwner) return res.status(403).json({ message: "Non autorisé" });
+
+    order.lastReadByClient = new Date();
+    await order.save();
+
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
