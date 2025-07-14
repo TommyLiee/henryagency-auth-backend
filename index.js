@@ -61,7 +61,8 @@ passport.use(new GoogleStrategy({
       firstName: profile.name.givenName,
       lastName: profile.name.familyName,
       email,
-      password: ""
+      password: "",
+      provider: "google" // 👈 Ajout ici
     });
     await user.save();
   }
@@ -92,8 +93,8 @@ app.get("/auth/google/callback", passport.authenticate("google", {
     lastName: user.lastName
   }, JWT_SECRET, { expiresIn: "7d" });
 
-  // ✅ REDIRECTION FIX: `.html` retiré
-  res.redirect(`https://henryagency.webflow.io/dashboard?token=${token}`);
+  // ✅ REDIRECTION vers ton Webflow temporaire (à changer plus tard)
+  res.redirect(`https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io/dashboard?token=${token}`);
 });
 
 // ✅ Routes utilisateur
@@ -110,7 +111,8 @@ app.post("/inscription", async (req, res) => {
       lastName: lastName?.trim(),
       phone: phone?.trim(),
       email: email.trim().toLowerCase(),
-      password: hashedPassword
+      password: hashedPassword,
+      provider: "local"
     });
 
     await newUser.save();
