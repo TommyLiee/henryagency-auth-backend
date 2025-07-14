@@ -74,7 +74,7 @@ passport.deserializeUser(async (id, done) => {
   done(null, user);
 });
 
-app.post("/register", async (req, res) => {
+app.post("/inscription", async (req, res) => {
   const { firstName, lastName, phone, email, password } = req.body;
 
   try {
