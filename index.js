@@ -181,15 +181,29 @@ app.post("/create-order", authMiddleware, async (req, res) => {
   }
 });
 
-app.get("/admin-orders", authMiddleware, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
+app.get("/orders", authMiddleware, async (req, res) => {
   try {
-    const orders = await Order.find().sort({ date: -1 });
-    res.json(orders);
+    const orders = await Order.find({ userId: req.user.userId }).sort({ date: -1 });
+
+    const updatedOrders = orders.map(order => {
+      const lastMessage = order.messages?.[order.messages.length - 1];
+      const hasNewMessage =
+        lastMessage &&
+        lastMessage.sender === "admin" &&
+        (!order.lastReadByClient || new Date(lastMessage.timestamp) > new Date(order.lastReadByClient));
+
+      return {
+        ...order.toObject(),
+        hasNewMessage
+      };
+    });
+
+    res.json(updatedOrders);
   } catch {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 // ✅ Changement de statut (admin)
 app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
