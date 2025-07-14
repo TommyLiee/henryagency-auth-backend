@@ -14,12 +14,13 @@ const User = require("./models/User");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Clés & Configs
 const JWT_SECRET = "henrysupersecret2025";
 const ADMIN_EMAIL = "tr33fle@gmail.com";
-
 const GOOGLE_CLIENT_ID = "638043072445-l20os9t7k32baur7qgdg7s8r7ptpud82.apps.googleusercontent.com";
 const GOOGLE_CLIENT_SECRET = "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";
 
+// Middleware global
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 app.use(express.json());
@@ -27,10 +28,12 @@ app.use(session({ secret: "keyboard cat", resave: false, saveUninitialized: fals
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Connexion MongoDB
 mongoose.connect("mongodb+srv://admin:admin123@henryagency.nrvabdb.mongodb.net/?retryWrites=true&w=majority")
   .then(() => console.log("✅ Connecté à MongoDB"))
   .catch(err => console.error("❌ Erreur MongoDB :", err));
 
+// Middleware d'authentification JWT
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "Token manquant" });
@@ -44,12 +47,12 @@ function authMiddleware(req, res, next) {
   }
 }
 
+// Authentification Google
 passport.use(new GoogleStrategy({
   clientID: GOOGLE_CLIENT_ID,
   clientSecret: GOOGLE_CLIENT_SECRET,
   callbackURL: "https://henryagency-auth-backend.onrender.com/auth/google/callback"
-},
-async (accessToken, refreshToken, profile, done) => {
+}, async (accessToken, refreshToken, profile, done) => {
   const email = profile.emails[0].value;
   let user = await User.findOne({ email });
 
@@ -66,14 +69,34 @@ async (accessToken, refreshToken, profile, done) => {
   return done(null, user);
 }));
 
-passport.serializeUser((user, done) => {
-  done(null, user._id);
-});
+passport.serializeUser((user, done) => done(null, user._id));
 passport.deserializeUser(async (id, done) => {
   const user = await User.findById(id);
   done(null, user);
 });
 
+// 🔐 Google OAuth2 routes
+app.get("/auth/google", passport.authenticate("google", {
+  scope: ["profile", "email"]
+}));
+
+app.get("/auth/google/callback", passport.authenticate("google", {
+  session: false,
+  failureRedirect: "/login"
+}), (req, res) => {
+  const user = req.user;
+  const token = jwt.sign({
+    userId: user._id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName
+  }, JWT_SECRET, { expiresIn: "7d" });
+
+  // ✅ REDIRECTION FIX: `.html` retiré
+  res.redirect(`https://henryagency.webflow.io/dashboard?token=${token}`);
+});
+
+// ✅ Routes utilisateur
 app.post("/inscription", async (req, res) => {
   const { firstName, lastName, phone, email, password } = req.body;
 
@@ -82,7 +105,6 @@ app.post("/inscription", async (req, res) => {
     if (existing) return res.status(400).json({ error: "Email déjà utilisé" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = new User({
       firstName: firstName?.trim(),
       lastName: lastName?.trim(),
@@ -123,25 +145,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.get("/auth/google", passport.authenticate("google", {
-  scope: ["profile", "email"]
-}));
-
-app.get("/auth/google/callback", passport.authenticate("google", {
-  session: false,
-  failureRedirect: "/login"
-}), (req, res) => {
-  const user = req.user;
-  const token = jwt.sign({
-    userId: user._id,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName
-  }, JWT_SECRET, { expiresIn: "7d" });
-
-  res.redirect(`https://henryagency.webflow.io/dashboard?token=${token}`);
-});
-
 app.get("/profile", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select("-password");
@@ -151,6 +154,7 @@ app.get("/profile", authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ Commandes
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.userId }).sort({ date: -1 });
@@ -182,6 +186,7 @@ app.post("/create-order", authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ Commandes Admin
 app.get("/admin-orders", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
 
@@ -193,6 +198,7 @@ app.get("/admin-orders", authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ Chat commandes
 app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -237,6 +243,7 @@ app.post("/orders/:id/messages", authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ Lancement du serveur
 app.listen(PORT, () => {
   console.log(`🚀 Serveur backend lancé sur http://localhost:${PORT}`);
 });
