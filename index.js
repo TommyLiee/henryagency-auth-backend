@@ -161,7 +161,7 @@ app.post("/create-order", authMiddleware, async (req, res) => {
   }
 });
 
-aapp.get("/orders", authMiddleware, async (req, res) => {
+app.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.userId }).sort({ date: -1 });
 
