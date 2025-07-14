@@ -144,7 +144,18 @@ app.get("/profile", authMiddleware, async (req, res) => {
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.userId }).sort({ date: -1 });
-    res.json(orders);
+
+const updatedOrders = orders.map(order => {
+  const lastMessage = order.messages?.[order.messages.length - 1];
+  const hasNewMessage = lastMessage && lastMessage.sender === "admin";
+  return {
+    ...order.toObject(),
+    hasNewMessage
+  };
+});
+
+res.json(updatedOrders);
+
   } catch {
     res.status(500).json({ message: "Erreur serveur" });
   }
