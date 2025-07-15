@@ -205,6 +205,21 @@ app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ Liste des commandes pour admin
+app.get("/admin-orders", authMiddleware, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) {
+    return res.status(403).json({ message: "Accès refusé" });
+  }
+
+  try {
+    const orders = await Order.find().sort({ date: -1 });
+    res.json(orders);
+  } catch {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
 app.get("/orders/:id/messages", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
