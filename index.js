@@ -205,6 +205,27 @@ app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
   }
 });
 
+// ✅ Changement de progression (admin)
+app.patch("/admin-orders/:id/progress", authMiddleware, async (req, res) => {
+  const { progression } = req.body;
+
+  if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
+
+  if (![0, 25, 50, 75, 100].includes(progression)) {
+    return res.status(400).json({ message: "Progression invalide" });
+  }
+
+  try {
+    const order = await Order.findByIdAndUpdate(req.params.id, { progression }, { new: true });
+    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
+
+    res.json({ message: `✅ Progression mise à jour : ${progression}%`, order });
+  } catch (err) {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
 // ✅ Liste des commandes pour admin
 app.get("/admin-orders", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) {
