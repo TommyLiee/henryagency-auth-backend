@@ -244,6 +244,16 @@ app.patch("/admin-orders/:id/deliverables/:deliverableId/publish", authMiddlewar
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+app.delete("/admin-orders/:id/deliverables/:deliverableId", authMiddleware, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
+
+  try {
+    await Deliverable.deleteOne({ _id: req.params.deliverableId, orderId: req.params.id });
+    res.json({ message: "🗑️ Livrable supprimé" });
+  } catch {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
 
 
 
