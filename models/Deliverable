@@ -22,6 +22,10 @@ const deliverableSchema = new mongoose.Schema({
       comment: String
     }
   ],
+  published: {
+    type: Boolean,
+    default: false // ✅ par défaut, non visible par le client
+  },
   deliveredAt: {
     type: Date,
     default: Date.now
