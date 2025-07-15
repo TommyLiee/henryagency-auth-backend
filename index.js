@@ -219,8 +219,8 @@ app.get("/orders/:id/deliverables", authMiddleware, async (req, res) => {
 
     const filter = { orderId: req.params.id };
 if (!isAdmin) filter.published = true;
-
 const deliverables = await Deliverable.find(filter).sort({ deliveredAt: -1 });
+
 
     res.json(deliverables);
   } catch {
@@ -254,8 +254,6 @@ app.delete("/admin-orders/:id/deliverables/:deliverableId", authMiddleware, asyn
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
-
-
 
 
 // ✅ Changement de statut (admin)
