@@ -37,6 +37,47 @@ const itemSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
+// ✅ Sous-schéma : commentaire sur une vidéo livrée
+const deliveryCommentSchema = new mongoose.Schema({
+  author: {
+    type: String, // "client" ou "admin"
+    enum: ["client", "admin"],
+    required: true
+  },
+  timestamp: {
+    type: Number, // en secondes dans la vidéo
+    required: true
+  },
+  text: {
+    type: String,
+    required: true
+  },
+  date: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });
+
+// ✅ Sous-schéma : vidéo livrée
+const deliverySchema = new mongoose.Schema({
+  videoId: {
+    type: String,
+    required: true
+  },
+  url: {
+    type: String,
+    required: true
+  },
+  comments: {
+    type: [deliveryCommentSchema],
+    default: []
+  },
+  date: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: false });
+
 // ✅ Schéma principal : commande
 const orderSchema = new mongoose.Schema({
   userId: {
@@ -63,7 +104,7 @@ const orderSchema = new mongoose.Schema({
   },
   progression: {
     type: Number,
-    default: 0 // Valeurs attendues : 0, 25, 50, 75, 100
+    default: 0 // 0 → 100 %
   },
   date: {
     type: Date,
@@ -75,6 +116,10 @@ const orderSchema = new mongoose.Schema({
   },
   items: {
     type: [itemSchema],
+    default: []
+  },
+  deliveries: {
+    type: [deliverySchema],
     default: []
   },
   lastReadByClient: {
