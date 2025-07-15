@@ -188,25 +188,33 @@ app.get("/orders", authMiddleware, async (req, res) => {
 
 const Deliverable = require("./models/Deliverable");
 
-app.post("/admin-orders/:id/deliverables", authMiddleware, async (req, res) => {
+app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
 
-  const { title, url } = req.body;
-  if (!url) return res.status(400).json({ message: "URL manquante" });
+  const { videoId, url } = req.body;
+  if (!videoId || !url) return res.status(400).json({ message: "Paramètres manquants" });
 
   try {
-    const deliverable = new Deliverable({
-      orderId: req.params.id,
-      title: title || "Vidéo livrée",
-      url
-    });
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
 
-    await deliverable.save();
-    res.json({ message: "✅ Livrable ajouté", deliverable });
-  } catch {
+    const newDelivery = {
+      videoId,
+      url,
+      comments: [],
+      date: new Date()
+    };
+
+    order.deliveries.unshift(newDelivery); // Ajoute en haut
+    await order.save();
+
+    res.json({ message: "✅ Vidéo livrée avec succès", deliveries: order.deliveries });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 app.get("/orders/:id/deliverables", authMiddleware, async (req, res) => {
   try {
