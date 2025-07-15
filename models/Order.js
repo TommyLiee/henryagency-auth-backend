@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-// ✅ Sous-schéma : message (chat client/admin)
+/* === 🟦 Sous-schéma : messages du chat === */
 const messageSchema = new mongoose.Schema({
   sender: {
     type: String,
@@ -17,7 +17,7 @@ const messageSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
-// ✅ Sous-schéma : item de commande
+/* === 🟩 Sous-schéma : items commandés === */
 const itemSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -37,15 +37,15 @@ const itemSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
-// ✅ Sous-schéma : commentaire sur une vidéo livrée
+/* === 🟨 Sous-schéma : commentaires sur les livrables === */
 const deliveryCommentSchema = new mongoose.Schema({
   author: {
-    type: String, // "client" ou "admin"
+    type: String,
     enum: ["client", "admin"],
     required: true
   },
   timestamp: {
-    type: Number, // en secondes dans la vidéo
+    type: Number, // en secondes
     required: true
   },
   text: {
@@ -58,7 +58,7 @@ const deliveryCommentSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
-// ✅ Sous-schéma : vidéo livrée
+/* === 🟥 Sous-schéma : vidéos livrées === */
 const deliverySchema = new mongoose.Schema({
   videoId: {
     type: String,
@@ -78,7 +78,7 @@ const deliverySchema = new mongoose.Schema({
   }
 }, { _id: false });
 
-// ✅ Schéma principal : commande
+/* === 📦 Schéma principal : commande === */
 const orderSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -104,7 +104,7 @@ const orderSchema = new mongoose.Schema({
   },
   progression: {
     type: Number,
-    default: 0 // 0 → 100 %
+    default: 0 // entre 0 et 100
   },
   date: {
     type: Date,
