@@ -225,6 +225,24 @@ app.get("/orders/:id/deliverables", authMiddleware, async (req, res) => {
   }
 });
 
+app.patch("/admin-orders/:id/deliverables/:deliverableId/publish", authMiddleware, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
+
+  try {
+    const deliverable = await Deliverable.findOneAndUpdate(
+      { _id: req.params.deliverableId, orderId: req.params.id },
+      { published: true },
+      { new: true }
+    );
+    if (!deliverable) return res.status(404).json({ message: "Livrable non trouvé" });
+
+    res.json({ message: "✅ Vidéo publiée", deliverable });
+  } catch {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
 
 
 // ✅ Changement de statut (admin)
