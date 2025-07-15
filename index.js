@@ -216,25 +216,7 @@ app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
 });
 
 
-app.get("/orders/:id/deliverables", authMiddleware, async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
 
-    const isOwner = order.userId.toString() === req.user.userId;
-    const isAdmin = req.user.email === ADMIN_EMAIL;
-    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
-
-    const filter = { orderId: req.params.id };
-if (!isAdmin) filter.published = true;
-const deliverables = await Deliverable.find(filter).sort({ deliveredAt: -1 });
-
-
-    res.json(deliverables);
-  } catch {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
 
 app.patch("/admin-orders/:id/deliverables/:deliverableId/publish", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
