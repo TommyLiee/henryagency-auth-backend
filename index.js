@@ -186,6 +186,46 @@ app.get("/orders", authMiddleware, async (req, res) => {
   }
 });
 
+const Deliverable = require("./models/Deliverable");
+
+app.post("/admin-orders/:id/deliverables", authMiddleware, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
+
+  const { title, url } = req.body;
+  if (!url) return res.status(400).json({ message: "URL manquante" });
+
+  try {
+    const deliverable = new Deliverable({
+      orderId: req.params.id,
+      title: title || "Vidéo livrée",
+      url
+    });
+
+    await deliverable.save();
+    res.json({ message: "✅ Livrable ajouté", deliverable });
+  } catch {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+app.get("/orders/:id/deliverables", authMiddleware, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
+
+    const isOwner = order.userId.toString() === req.user.userId;
+    const isAdmin = req.user.email === ADMIN_EMAIL;
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
+
+    const deliverables = await Deliverable.find({ orderId: req.params.id }).sort({ deliveredAt: -1 });
+
+    res.json(deliverables);
+  } catch {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
 
 // ✅ Changement de statut (admin)
 app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
