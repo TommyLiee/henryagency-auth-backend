@@ -61,6 +61,10 @@ const orderSchema = new mongoose.Schema({
     enum: ["en attente", "payée", "en cours", "en pause", "terminée"],
     default: "en attente"
   },
+  progression: {
+    type: Number,
+    default: 0 // Valeurs attendues : 0, 25, 50, 75, 100
+  },
   date: {
     type: Date,
     default: Date.now
