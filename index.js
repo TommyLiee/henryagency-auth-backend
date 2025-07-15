@@ -186,7 +186,6 @@ app.get("/orders", authMiddleware, async (req, res) => {
   }
 });
 
-const Deliverable = require("./models/Deliverable");
 
 app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
@@ -216,36 +215,6 @@ app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
 });
 
 
-
-
-app.patch("/admin-orders/:id/deliverables/:deliverableId/publish", authMiddleware, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
-
-  try {
-    const deliverable = await Deliverable.findOneAndUpdate(
-      { _id: req.params.deliverableId, orderId: req.params.id },
-      { published: true },
-      { new: true }
-    );
-    if (!deliverable) return res.status(404).json({ message: "Livrable non trouvé" });
-
-    res.json({ message: "✅ Vidéo publiée", deliverable });
-  } catch {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
-app.delete("/admin-orders/:id/deliverables/:deliverableId", authMiddleware, async (req, res) => {
-  if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
-
-  try {
-    await Deliverable.deleteOne({ _id: req.params.deliverableId, orderId: req.params.id });
-    res.json({ message: "🗑️ Livrable supprimé" });
-  } catch {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
-
-
 // ✅ Changement de statut (admin)
 app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
   const { status } = req.body;
@@ -263,6 +232,34 @@ app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+// ✅ Nouvelle route pour livrer une vidéo (enregistre dans order.deliveries)
+app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
+  if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
+
+  const { videoId, url } = req.body;
+  if (!videoId || !url) return res.status(400).json({ message: "Paramètres manquants" });
+
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
+
+    const newDelivery = {
+      videoId,
+      url,
+      comments: [],
+      date: new Date()
+    };
+
+    order.deliveries.unshift(newDelivery); // ajoute en haut
+    await order.save();
+
+    res.json({ message: "✅ Vidéo livrée avec succès", deliveries: order.deliveries });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
 
 // ✅ Changement de progression (admin)
 app.patch("/admin-orders/:id/progress", authMiddleware, async (req, res) => {
