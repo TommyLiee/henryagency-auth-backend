@@ -217,7 +217,10 @@ app.get("/orders/:id/deliverables", authMiddleware, async (req, res) => {
     const isAdmin = req.user.email === ADMIN_EMAIL;
     if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
 
-    const deliverables = await Deliverable.find({ orderId: req.params.id }).sort({ deliveredAt: -1 });
+    const filter = { orderId: req.params.id };
+if (!isAdmin) filter.published = true;
+
+const deliverables = await Deliverable.find(filter).sort({ deliveredAt: -1 });
 
     res.json(deliverables);
   } catch {
