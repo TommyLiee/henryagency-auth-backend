@@ -304,6 +304,32 @@ app.get("/deliverable/:id", authMiddleware, async (req, res) => {
   }
 });
 
+app.get("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
+  try {
+    const deliverable = await Deliverable.findById(req.params.id);
+    if (!deliverable) {
+      return res.status(404).json({ message: "Livrable introuvable" });
+    }
+
+    const order = await Order.findById(deliverable.orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Commande introuvable" });
+    }
+
+    const isOwner = order.userId.toString() === req.user.userId;
+    const isAdmin = req.user.email === ADMIN_EMAIL;
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: "Non autorisé" });
+    }
+
+    res.json({ feedbacks: deliverable.feedbacks });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
 
 app.post("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
   const { text, timestamp, drawing } = req.body;
