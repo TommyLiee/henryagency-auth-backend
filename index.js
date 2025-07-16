@@ -240,6 +240,19 @@ app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
   }
 });
 
+const Deliverable = require("./models/deliverable");
+
+app.get("/deliverables/:orderId", async (req, res) => {
+  try {
+    const deliverables = await Deliverable.find({ orderId: req.params.orderId });
+    res.json(deliverables);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+
 // ✅ Changement de progression (admin)
 app.patch("/admin-orders/:id/progress", authMiddleware, async (req, res) => {
   const { progression } = req.body;
