@@ -12,6 +12,7 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const Order = require("./models/Order");
 const User = require("./models/User");
+const Deliverable = require("./models/Deliverable");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -163,44 +164,33 @@ app.post("/create-order", authMiddleware, async (req, res) => {
 
 app.get("/orders", authMiddleware, async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user.userId }).sort({ date: -1 });
+    const orders = await Order.find({ userId: req.user.userId }).sort({ date: -1 }).lean();
+    const orderIds = orders.map(o => o._id);
+    const allDeliveries = await Deliverable.find({ orderId: { $in: orderIds } }).sort({ deliveredAt: -1 });
 
     const updatedOrders = orders.map(order => {
-      const lastRead = order.lastReadByClient ? new Date(order.lastReadByClient) : new Date(0);
+      const deliveries = allDeliveries
+        .filter(d => d.orderId.toString() === order._id.toString());
 
-      // Filtrer tous les messages de l'admin non lus
+      const lastRead = order.lastReadByClient ? new Date(order.lastReadByClient) : new Date(0);
       const unreadMessages = order.messages?.filter(msg =>
         msg.sender === "admin" && new Date(msg.timestamp) > lastRead
       ) || [];
 
       return {
-        ...order.toObject(),
+        ...order,
+        deliveries, // 🔥 injecte dynamiquement les vidéos ici
         hasNewMessage: unreadMessages.length > 0,
         newMessageCount: unreadMessages.length
       };
     });
 
     res.json(updatedOrders);
-  } catch {
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
-
-app.get("/orders/:id/deliveries", authMiddleware, async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
-
-    const isOwner = order.userId.toString() === req.user.userId;
-    const isAdmin = req.user.email === ADMIN_EMAIL;
-    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
-
-    res.json(order.deliveries || []);
-  } catch {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-});
-
 
 
 // ✅ Changement de statut (admin)
@@ -225,30 +215,30 @@ app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
 app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
   if (req.user.email !== ADMIN_EMAIL) return res.status(403).json({ message: "Accès refusé" });
 
-  const { videoId, url } = req.body;
-  if (!videoId || !url) return res.status(400).json({ message: "Paramètres manquants" });
+  const { url, title } = req.body;
+  if (!url) return res.status(400).json({ message: "URL manquante" });
 
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: "Commande non trouvée" });
 
-    const newDelivery = {
-      videoId,
+    const newDeliverable = new Deliverable({
+      orderId: order._id,
+      title: title || "Vidéo livrée",
       url,
-      comments: [],
-      date: new Date()
-    };
+      published: false,
+      feedbacks: [],
+      deliveredAt: new Date()
+    });
 
-    order.deliveries.unshift(newDelivery); // ajoute en haut
-    await order.save();
+    await newDeliverable.save();
 
-    res.json({ message: "✅ Vidéo livrée avec succès", deliveries: order.deliveries });
+    res.json({ message: "✅ Vidéo livrée avec succès", deliverable: newDeliverable });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
-
 
 // ✅ Changement de progression (admin)
 app.patch("/admin-orders/:id/progress", authMiddleware, async (req, res) => {
