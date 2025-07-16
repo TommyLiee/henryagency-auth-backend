@@ -247,6 +247,46 @@ app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
   }
 });
 
+app.post("/deliverables/:id/feedback/:feedbackIndex/reply", authMiddleware, async (req, res) => {
+  const { text } = req.body;
+  const feedbackIndex = parseInt(req.params.feedbackIndex);
+
+  if (!text || isNaN(feedbackIndex)) {
+    return res.status(400).json({ message: "Texte ou index manquant/invalide" });
+  }
+
+  try {
+    const deliverable = await Deliverable.findById(req.params.id);
+    if (!deliverable) return res.status(404).json({ message: "Livrable introuvable" });
+
+    const order = await Order.findById(deliverable.orderId);
+    if (!order) return res.status(404).json({ message: "Commande introuvable" });
+
+    const isOwner = order.userId.toString() === req.user.userId;
+    const isAdmin = req.user.email === ADMIN_EMAIL;
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
+
+    const reply = {
+      author: isAdmin ? "admin" : "client",
+      text,
+      createdAt: new Date()
+    };
+
+    if (!deliverable.feedbacks[feedbackIndex]) {
+      return res.status(400).json({ message: "Commentaire introuvable" });
+    }
+
+    deliverable.feedbacks[feedbackIndex].replies.push(reply);
+    await deliverable.save();
+
+    res.json({ message: "✅ Réponse ajoutée", replies: deliverable.feedbacks[feedbackIndex].replies });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
 app.get("/deliverables/:orderId", async (req, res) => {
   try {
     const deliverables = await Deliverable.find({ orderId: req.params.orderId });
