@@ -23,7 +23,11 @@ const GOOGLE_CLIENT_ID = "638043072445-l20os9t7k32baur7qgdg7s8r7ptpud82.apps.goo
 const GOOGLE_CLIENT_SECRET = "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";
 
 app.use(express.static(path.join(__dirname, "public")));
-app.use(cors());
+app.use(cors({
+  origin: "https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io",
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(session({ secret: "keyboard cat", resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
