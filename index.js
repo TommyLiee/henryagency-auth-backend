@@ -254,6 +254,58 @@ app.get("/deliverables/:orderId", async (req, res) => {
   }
 });
 
+app.get("/deliverables/:id", authMiddleware, async (req, res) => {
+  try {
+    const deliverable = await Deliverable.findById(req.params.id);
+    if (!deliverable) return res.status(404).json({ message: "Livrable introuvable" });
+
+    const order = await Order.findById(deliverable.orderId);
+    if (!order) return res.status(404).json({ message: "Commande introuvable" });
+
+    const isOwner = order.userId.toString() === req.user.userId;
+    const isAdmin = req.user.email === ADMIN_EMAIL;
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
+
+    res.json(deliverable);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+app.post("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
+  const { text, timestamp } = req.body;
+  if (!text || typeof timestamp !== "number") {
+    return res.status(400).json({ message: "Texte ou timestamp manquant/invalide" });
+  }
+
+  try {
+    const deliverable = await Deliverable.findById(req.params.id);
+    if (!deliverable) return res.status(404).json({ message: "Livrable introuvable" });
+
+    const order = await Order.findById(deliverable.orderId);
+    if (!order) return res.status(404).json({ message: "Commande introuvable" });
+
+    const isOwner = order.userId.toString() === req.user.userId;
+    const isAdmin = req.user.email === ADMIN_EMAIL;
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
+
+    deliverable.feedbacks.push({
+      author: isAdmin ? "admin" : "client",
+      timestamp,
+      text,
+      createdAt: new Date()
+    });
+
+    await deliverable.save();
+    res.json({ message: "✅ Commentaire ajouté", feedbacks: deliverable.feedbacks });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
 
 // ✅ Changement de progression (admin)
 app.patch("/admin-orders/:id/progress", authMiddleware, async (req, res) => {
