@@ -186,6 +186,22 @@ app.get("/orders", authMiddleware, async (req, res) => {
   }
 });
 
+app.get("/orders/:id/deliveries", authMiddleware, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Commande non trouvée" });
+
+    const isOwner = order.userId.toString() === req.user.userId;
+    const isAdmin = req.user.email === ADMIN_EMAIL;
+    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
+
+    res.json(order.deliveries || []);
+  } catch {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
+
+
 
 // ✅ Changement de statut (admin)
 app.patch("/admin-orders/:id/status", authMiddleware, async (req, res) => {
