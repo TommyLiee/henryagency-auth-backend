@@ -247,16 +247,14 @@ app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
   }
 });
 
-app.post("/deliverables/:id/feedback/:feedbackIndex/reply", authMiddleware, async (req, res) => {
+app.post("/deliverables/:id/feedback/:feedbackId/reply", authMiddleware, async (req, res) => {
   const { text } = req.body;
-  const feedbackIndex = parseInt(req.params.feedbackIndex);
+  const { id, feedbackId } = req.params;
 
-  if (!text || isNaN(feedbackIndex)) {
-    return res.status(400).json({ message: "Texte ou index manquant/invalide" });
-  }
+  if (!text) return res.status(400).json({ message: "Texte manquant" });
 
   try {
-    const deliverable = await Deliverable.findById(req.params.id);
+    const deliverable = await Deliverable.findById(id);
     if (!deliverable) return res.status(404).json({ message: "Livrable introuvable" });
 
     const order = await Order.findById(deliverable.orderId);
@@ -266,20 +264,18 @@ app.post("/deliverables/:id/feedback/:feedbackIndex/reply", authMiddleware, asyn
     const isAdmin = req.user.email === ADMIN_EMAIL;
     if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
 
-    const reply = {
+    const feedback = deliverable.feedbacks.id(feedbackId);
+    if (!feedback) return res.status(404).json({ message: "Commentaire introuvable" });
+
+    feedback.replies.push({
       author: isAdmin ? "admin" : "client",
       text,
       createdAt: new Date()
-    };
+    });
 
-    if (!deliverable.feedbacks[feedbackIndex]) {
-      return res.status(400).json({ message: "Commentaire introuvable" });
-    }
-
-    deliverable.feedbacks[feedbackIndex].replies.push(reply);
     await deliverable.save();
 
-    res.json({ message: "✅ Réponse ajoutée", replies: deliverable.feedbacks[feedbackIndex].replies });
+    res.json({ message: "✅ Réponse ajoutée", replies: feedback.replies });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
