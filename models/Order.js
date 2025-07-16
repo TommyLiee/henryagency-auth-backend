@@ -81,6 +81,8 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: null
   }
+}, {
+  timestamps: true // ajoute automatiquement createdAt et updatedAt
 });
 
 module.exports = mongoose.model("Order", orderSchema);
