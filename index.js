@@ -89,6 +89,18 @@ app.get("/auth/google/callback", passport.authenticate("google", {
   res.redirect(`https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io/dashboard?token=${token}`);
 });
 
+const deliveries = allDeliveries
+  .filter(d => d.orderId.toString() === order._id.toString())
+  .map(d => ({
+    _id: d._id,              // ✅ on garde l'ID pour le client
+    url: d.url,
+    title: d.title,
+    published: d.published,
+    feedbacks: d.feedbacks,
+    deliveredAt: d.deliveredAt
+  }));
+
+
 app.post("/inscription", async (req, res) => {
   const { firstName, lastName, phone, email, password } = req.body;
   try {
