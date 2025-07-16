@@ -25,8 +25,11 @@ const GOOGLE_CLIENT_SECRET = "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";
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors({
   origin: "https://tests-1c0c5e-d0ae5cc8df195a1a1628634fd5.webflow.io",
-  credentials: true
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"],    // ← autorise l’en-tête Authorization
+  methods: ["GET","POST","PATCH","PUT","DELETE","OPTIONS"]
 }));
+
 
 app.use(express.json());
 app.use(session({ secret: "keyboard cat", resave: false, saveUninitialized: false }));
@@ -254,24 +257,17 @@ app.get("/deliverables/:orderId", async (req, res) => {
   }
 });
 
-app.get("/deliverables/:id", authMiddleware, async (req, res) => {
+app.get("/deliverable/:id", authMiddleware, async (req, res) => {
   try {
-    const deliverable = await Deliverable.findById(req.params.id);
-    if (!deliverable) return res.status(404).json({ message: "Livrable introuvable" });
-
-    const order = await Order.findById(deliverable.orderId);
-    if (!order) return res.status(404).json({ message: "Commande introuvable" });
-
-    const isOwner = order.userId.toString() === req.user.userId;
-    const isAdmin = req.user.email === ADMIN_EMAIL;
-    if (!isOwner && !isAdmin) return res.status(403).json({ message: "Non autorisé" });
-
-    res.json(deliverable);
+    const d = await Deliverable.findById(req.params.id);
+    if (!d) return res.status(404).json({ message: "Deliverable non trouvé" });
+    res.json(d);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 app.post("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
   const { text, timestamp } = req.body;
