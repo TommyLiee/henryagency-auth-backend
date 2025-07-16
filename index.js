@@ -310,7 +310,8 @@ app.get("/deliverable/:id", authMiddleware, async (req, res) => {
 
 
 app.post("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
-  const { text, timestamp } = req.body;
+  const { text, timestamp, drawing } = req.body;
+
   if (!text || typeof timestamp !== "number") {
     return res.status(400).json({ message: "Texte ou timestamp manquant/invalide" });
   }
@@ -330,16 +331,18 @@ app.post("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
       author: isAdmin ? "admin" : "client",
       timestamp,
       text,
+      drawing: Array.isArray(drawing) ? drawing : [],
       createdAt: new Date()
     });
 
     await deliverable.save();
-    res.json({ message: "✅ Commentaire ajouté", feedbacks: deliverable.feedbacks });
+    res.json({ message: "✅ Commentaire avec dessin ajouté", feedbacks: deliverable.feedbacks });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 
 
