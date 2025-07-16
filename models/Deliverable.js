@@ -1,18 +1,25 @@
 const mongoose = require("mongoose");
 
+// Sous-schema pour les réponses à un commentaire
 const replySchema = new mongoose.Schema({
   text: { type: String, required: true },
   createdAt: { type: Date, default: Date.now }
 });
 
+// Schéma principal pour un commentaire avec dessin
 const feedbackSchema = new mongoose.Schema({
   author: { type: String, enum: ["admin", "client"], required: true },
-  timestamp: { type: Number, required: true }, // en secondes
+  timestamp: { type: Number, required: true }, // secondes
   text: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  replies: { type: [replySchema], default: [] } // ⬅ sous-commentaires ici
+  drawing: {
+    type: [[Number]], // tableau de [x, y] ex: [[20, 30], [25, 35]]
+    default: []
+  },
+  replies: { type: [replySchema], default: [] },
+  createdAt: { type: Date, default: Date.now }
 });
 
+// Schéma global du livrable
 const deliverableSchema = new mongoose.Schema({
   orderId: {
     type: mongoose.Schema.Types.ObjectId,
