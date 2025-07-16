@@ -169,8 +169,7 @@ app.get("/orders", authMiddleware, async (req, res) => {
     const allDeliveries = await Deliverable.find({ orderId: { $in: orderIds } }).sort({ deliveredAt: -1 });
 
     const updatedOrders = orders.map(order => {
-      const deliveries = allDeliveries
-        .filter(d => d.orderId.toString() === order._id.toString());
+      const deliveries = allDeliveries.filter(d => d.orderId.toString() === order._id.toString());
 
       const lastRead = order.lastReadByClient ? new Date(order.lastReadByClient) : new Date(0);
       const unreadMessages = order.messages?.filter(msg =>
@@ -179,7 +178,7 @@ app.get("/orders", authMiddleware, async (req, res) => {
 
       return {
         ...order,
-        deliveries, // 🔥 injecte dynamiquement les vidéos ici
+        deliveries,
         hasNewMessage: unreadMessages.length > 0,
         newMessageCount: unreadMessages.length
       };
@@ -191,6 +190,7 @@ app.get("/orders", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 
 // ✅ Changement de statut (admin)
@@ -239,8 +239,6 @@ app.post("/admin-orders/:id/deliveries", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
-
-const Deliverable = require("./models/deliverable");
 
 app.get("/deliverables/:orderId", async (req, res) => {
   try {
