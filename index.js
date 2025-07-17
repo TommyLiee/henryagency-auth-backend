@@ -332,7 +332,7 @@ app.get("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
 
 
 app.post("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
-  const { text, timestamp, drawing } = req.body;
+  const { text, timestamp, drawing, shapes } = req.body; // ← shapes ajouté ici
 
   if (!text || typeof timestamp !== "number") {
     return res.status(400).json({ message: "Texte ou timestamp manquant/invalide" });
@@ -354,6 +354,7 @@ app.post("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
       timestamp,
       text,
       drawing: Array.isArray(drawing) ? drawing : [],
+      shapes: Array.isArray(shapes) ? shapes : [], // ← Ajout ici
       createdAt: new Date()
     });
 
@@ -364,6 +365,7 @@ app.post("/deliverables/:id/feedback", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 
 
