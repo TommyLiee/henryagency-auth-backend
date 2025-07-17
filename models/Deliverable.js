@@ -12,12 +12,17 @@ const feedbackSchema = new mongoose.Schema({
   timestamp: { type: Number, required: true }, // secondes
   text: { type: String, required: true },
   drawing: {
-    type: [[Number]], // tableau de [x, y] ex: [[20, 30], [25, 35]]
+    type: [[Number]],
+    default: []
+  },
+  shapes: {
+    type: [mongoose.Schema.Types.Mixed],
     default: []
   },
   replies: { type: [replySchema], default: [] },
   createdAt: { type: Date, default: Date.now }
 });
+
 
 // Schéma global du livrable
 const deliverableSchema = new mongoose.Schema({
